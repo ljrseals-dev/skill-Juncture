@@ -1,0 +1,10 @@
+Amorph look update for Juncture Studio. Copy these over your Juncture folder, keeping the paths:
+
+  atrium/ui/theme-amorph.css      new (the look)
+  atrium/ui/look.js               new (Look picker, default: exact launcher)
+  atrium/ui/index.html            changed (links the theme, adds the header and the Look picker)
+  atrium/ui/app.js                changed (waveform takes its colours from the theme)
+  atrium/ui/vendor/fonts/         new files (Unbounded, Space Mono + their OFL licences)
+  scripts/ui_sweep.py             changed (checks the Amorph fonts, tests the readable-grey look)
+
+To go back: pick "Classic Juncture" in the Look box at the bottom of the sidebar.

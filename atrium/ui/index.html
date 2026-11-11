@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Juncture Studio</title>
+  <link rel="stylesheet" href="vendor/abcjs-audio.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="theme-amorph.css">
+  <script src="vendor/abcjs-basic-min.js"></script>
+  <script src="vendor/isSupported.min.js"></script>
+  <script src="vendor/butterchurn.min.js"></script>
+  <script src="vendor/butterchurn-presets.min.js"></script>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="brand-name">Juncture Studio</div>
+      <div class="brand-sub">Composes on this machine. Nothing leaves it.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Starting points</div>
+      <div id="presets" class="preset-grid"></div>
+    </div>
+    <div class="panel panel-grow">
+      <div class="panel-title">
+        History
+        <button id="refresh-history" class="btn-mini" title="Refresh">↻</button>
+      </div>
+      <div id="history" class="history-list"></div>
+    </div>
+    <div class="lk-pick">
+      <label for="look">Look</label>
+      <select id="look">
+        <option value="theme-amorph-exact">Amorph (exact launcher)</option>
+        <option value="theme-amorph">Amorph (readable grey)</option>
+        <option value="">Classic Juncture</option>
+      </select>
+    </div>
+  </aside>
+  <main id="main">
+    <div class="lk-hero">
+      <div class="lk-eyebrow">Juncture · Local-first · Offline music studio</div>
+      <h1 class="lk-title"><span>Juncture</span><br>Studio</h1>
+      <div class="lk-sub">Composes on this machine. Nothing leaves it. No model weights are shipped. Score, stems, EQ, master and MIDI in one offline studio.</div>
+      <div class="lk-badges"><span class="lk-badge live">Offline</span><span class="lk-badge midi">MIDI</span><span class="lk-badge free">No cloud</span><span class="lk-badge">Local-first</span></div>
+      <div class="lk-status"><span class="lk-dot"></span><span class="lk-status-text">Engine <span>local</span></span></div>
+    </div>
+    <section id="editor">
+      <div class="field">
+        <label for="style">Style brief</label>
+        <input id="style" type="text" placeholder="synthwave, female vocal, 110 BPM, minor" value="synthwave, neon, female vocal, 110 BPM">
+      </div>
+      <div class="field field-grow">
+        <label for="lyrics">Lyrics</label>
+        <textarea id="lyrics" spellcheck="false">[verse]
+Neon lights in the rain
+City lights in my rearview again
+
+[chorus]
+Tonight we ride until the dawn
+Leave the world we knew behind</textarea>
+      </div>
+      <div class="controls">
+        <div class="control">
+          <label for="backend">Engine</label>
+          <select id="backend"></select>
+        </div>
+        <div class="control">
+          <label for="duration">Length (seconds)</label>
+          <input id="duration" type="number" min="4" max="240" value="24">
+        </div>
+        <div class="control">
+          <label for="seed">Seed</label>
+          <div class="seed-row">
+            <input id="seed" type="number" value="42">
+            <button id="dice" class="btn-mini" title="Pick a random seed">Roll</button>
+          </div>
+        </div>
+        <button id="generate" class="btn-primary">Generate</button>
+      </div>
+      <div id="progress-wrap" hidden>
+        <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+        <div class="progress-row">
+          <span id="progress-label" class="progress-label">Loading…</span>
+          <span id="progress-eta" class="progress-eta"></span>
+        </div>
+      </div>
+    </section>
+    <section id="transport">
+      <div id="display">
+        <div class="transport-bar">
+          <button id="play" class="btn-transport" disabled aria-label="Play or pause">▶</button>
+          <div id="time" class="time">0:00 / 0:00</div>
+          <div class="readout" aria-live="polite">
+            <div>Loudness<b id="readout-lufs">not mastered</b></div>
+            <div>True peak<b id="readout-tp">–</b></div>
+          </div>
+          <div class="spacer"></div>
+          <button id="stems" class="btn-ghost">Split stems</button>
+          <button id="reveal" class="btn-ghost">Show in folder</button>
+        </div>
+        <div id="waveform"></div>
+      </div>
+    </section>
+    <section id="tabs">
+      <nav class="tabbar">
+        <button data-tab="score" class="tab active">Score</button>
+        <button data-tab="stems-panel" class="tab">Stems</button>
+        <button data-tab="eq" class="tab">EQ</button>
+        <button data-tab="master" class="tab">Master</button>
+        <button data-tab="compose" class="tab">Compose</button>
+        <button data-tab="vis" class="tab">Visualizer</button>
+        <button data-tab="map" class="tab">Map</button>
+        <button data-tab="log" class="tab">Log</button>
+      </nav>
+      <div id="tab-score" class="tabpane active">
+        <div class="score-modes">
+          <button id="mode-view" class="mode active">View</button>
+          <button id="mode-edit" class="mode">Edit</button>
+        </div>
+        <div id="score-view" class="score-view"><div class="empty">No score yet. Write a brief above and press Generate.</div></div>
+        <div id="score-edit" hidden>
+          <textarea id="abc-input" spellcheck="false" placeholder="ABC notation…"></textarea>
+          <div id="abc-paper" class="score-view"></div>
+        </div>
+        <div class="chain-form">
+          <span class="chain-title">Compose from Markov chain</span>
+          <label>Style <select id="chain-genre"></select></label>
+          <label>Key <select id="chain-key"></select></label>
+          <label>Bars <input id="chain-bars" type="number" min="2" max="32" value="8"></label>
+          <label>Seed <input id="chain-seed" type="text" value="1" size="10"></label>
+          <button id="markov-run" class="btn-ghost">Compose</button>
+        </div>
+        <div class="score-actions">
+          <button id="render-from-editor" class="btn-primary" disabled>Re-render audio</button>
+          <button id="export-abc" class="btn-ghost" disabled>Export ABC</button>
+        </div>
+      </div>
+      <div id="tab-stems-panel" class="tabpane">
+        <div id="stems-grid" class="stems-grid"><div class="empty">Generate a song, then choose Split stems.</div></div>
+      </div>
+      <div id="tab-eq" class="tabpane">
+        <div id="eq" class="eq"></div>
+        <div class="eq-actions">
+          <button id="eq-reset" class="btn-ghost">Reset</button>
+          <label class="eq-toggle"><input type="checkbox" id="eq-enabled" checked> Enabled</label>
+        </div>
+      </div>
+      <div id="tab-master" class="tabpane">
+        <div class="master-form">
+          <label>Target loudness (LUFS) <input id="master-lufs" type="number" step="0.5" min="-40" max="-5" value="-14"></label>
+          <label>True-peak ceiling (dBTP) <input id="master-tp" type="number" step="0.5" min="-9" max="0" value="-1"></label>
+          <label class="eq-toggle"><input type="checkbox" id="master-harmonia"> Harmonia codec round-trip</label>
+          <select id="master-harmonia-mode" disabled></select>
+          <button id="master-run" class="btn-primary" disabled>Master</button>
+        </div>
+        <div class="master-form">
+          <label>Vocal calibration <select id="vocal-preset"></select></label>
+          <button id="vocal-run" class="btn-primary" disabled>Calibrate vocal</button>
+        </div>
+        <p class="master-note" id="master-note">Loudness is measured to BS.1770-4. The Harmonia round-trip uses untrained weights and lowers audio quality, so it is off by default.</p>
+        <div id="master-result" class="master-result"><div class="empty">Generate a song, then press Master to set its loudness.</div></div>
+      </div>
+      <div id="tab-compose" class="tabpane">
+        <div class="compose-card">
+          <h3>NeuralMidi <small>text to MIDI · no weights · GPL-3.0-or-later</small></h3>
+          <div class="master-form">
+            <label>Prompt <input id="nm-prompt" type="text" maxlength="500" value="calm piano in D minor"></label>
+            <label>Seed <input id="nm-seed" type="number" min="0" step="1" value="1"></label>
+            <label>Tempo <input id="nm-tempo" type="number" min="30" max="240" value="100"></label>
+            <label>Register <select id="nm-register"><option>low</option><option selected>mid</option><option>high</option></select></label>
+            <button id="nm-run" class="btn-primary" disabled>Generate</button>
+          </div>
+          <div id="nm-result" class="master-result"></div>
+        </div>
+        <div class="compose-card">
+          <h3>Sigillum Composer <small>phrase traced on a planetary square · four voices</small></h3>
+          <div class="master-form">
+            <label>Text <input id="sg-text" type="text" maxlength="200" value="Amor vincit omnia"></label>
+            <label>Planet <select id="sg-planet"></select></label>
+            <label>Mode <select id="sg-mode"></select></label>
+            <label>Tonic (MIDI) <input id="sg-tonic" type="number" min="36" max="84" value="60"></label>
+            <label>Tempo <input id="sg-tempo" type="number" min="30" max="240" value="72"></label>
+            <button id="sg-run" class="btn-primary" disabled>Compose</button>
+          </div>
+          <div id="sg-result" class="master-result"></div>
+        </div>
+        <div class="compose-card">
+          <h3>MidiNote <small>ten-track GM generator · runs in the browser, no Python</small></h3>
+          <p class="master-note">Writes real .mid files. <a href="midinote/index.html" target="_blank" rel="noopener">Open in its own window</a></p>
+          <iframe id="mn-frame" class="mn-frame" title="MidiNote" src="midinote/index.html" loading="lazy"></iframe>
+          <div id="mn-result" class="master-result"></div>
+        </div>
+        <p class="master-note">Previews are a plain sine render so you can hear the notes. Import the .mid into a DAW for real sounds. Output folder: outputs/midi.</p>
+      </div>
+      <div id="tab-vis" class="tabpane">
+        <div class="vis-toolbar">
+          <label class="vis-label" for="vis-preset">Preset</label>
+          <select id="vis-preset" class="vis-select"></select>
+          <button id="vis-prev" class="btn-mini">◂ Prev</button>
+          <button id="vis-next" class="btn-mini">Next ▸</button>
+          <button id="vis-random" class="btn-mini">Random</button>
+          <label class="vis-toggle"><input type="checkbox" id="vis-auto" checked> Auto</label>
+          <label class="vis-toggle"><input type="checkbox" id="vis-enabled" checked> Enabled</label>
+          <button id="vis-fullscreen" class="btn-mini">Fullscreen</button>
+        </div>
+        <canvas id="vis-canvas"></canvas>
+      </div>
+      <div id="tab-map" class="tabpane">
+        <div class="map-pick">
+          <button class="btn-primary" data-map="system">System</button>
+          <button data-map="master-tab">Master tab</button>
+          <button data-map="crypt">Crypt</button>
+          <button data-map="elevenx-vcl-harmonia">ElevenX plan</button>
+          <button data-map="vocal-chain">Vocal chain</button>
+        </div>
+        <p class="master-note" id="map-note">Green is built and tested. Red is unverified here. Orange is planned.</p>
+        <figure class="map-fig"><img id="map-img" alt="Juncture system flowchart" src="diagrams/system.svg"></figure>
+      </div>
+      <div id="tab-log" class="tabpane"><pre id="log"></pre></div>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast" hidden></div>
+<script src="look.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
